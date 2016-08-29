@@ -8,10 +8,11 @@ namespace Cube
     /// </summary>
     public class Camera : GameComponent
     {
+        public bool isCollide { get; set; }
         public Matrix view { get; protected set; }
         public Matrix projection { get; protected set; }
 
-        public Vector3 cameraPosition { get; protected set; }
+        public Vector3 cameraPosition;
         Vector3 cameraDirection;
         Vector3 cameraUp;
 
@@ -19,6 +20,12 @@ namespace Cube
         float speed = 0.5f;
 
         MouseState prevMouseState;
+
+        //Jump
+        const int INITIAL_Y_POSITION = 8;
+        const int JUMP_SIZE = 18;
+        public bool IsJump { get; set; }
+        bool HighJump { get; set; }
 
         public Camera(Game game, Vector3 pos, Vector3 target, Vector3 up)
             : base(game)
@@ -30,7 +37,7 @@ namespace Cube
             cameraUp = up;
             CreateLookAt();
 
-            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, (float)Game.Window.ClientBounds.Width / (float)Game.Window.ClientBounds.Height, 1, 500);
+            projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.PiOver4, (float)Game.Window.ClientBounds.Width / (float)Game.Window.ClientBounds.Height, 0.001f, 1000f);
         }
 
         /// <summary>
@@ -55,27 +62,35 @@ namespace Cube
         /// <param name="gameTime">Provides a snapshot of timing values.</param>
         public override void Update(GameTime gameTime)
         {
+            var key = Keyboard.GetState();
 
             // Move forward and backward
-            if (Keyboard.GetState().IsKeyDown(Keys.Up))
-                cameraPosition += cameraDirection * speed;
-            if (Keyboard.GetState().IsKeyDown(Keys.Down))
-                cameraPosition -= cameraDirection * speed;
+            if (key.IsKeyDown(Keys.Up) || key.IsKeyDown(Keys.W)) cameraPosition += cameraDirection * speed;
+            if (key.IsKeyDown(Keys.Down) || key.IsKeyDown(Keys.S)) cameraPosition -= cameraDirection * speed;
 
-            if (Keyboard.GetState().IsKeyDown(Keys.Left))
-                cameraPosition += Vector3.Cross(cameraUp, cameraDirection) * speed;
-            if (Keyboard.GetState().IsKeyDown(Keys.Right))
-                cameraPosition -= Vector3.Cross(cameraUp, cameraDirection) * speed;
-
-            Vector3 fixY = cameraPosition;
-            fixY.Y = 8;
-            cameraPosition = fixY;
+            if (key.IsKeyDown(Keys.Left) || key.IsKeyDown(Keys.A)) cameraPosition += Vector3.Cross(cameraUp, cameraDirection) * speed;
+            if (key.IsKeyDown(Keys.Right) || key.IsKeyDown(Keys.D)) cameraPosition -= Vector3.Cross(cameraUp, cameraDirection) * speed;
+            
 
             // Rotation in the world
             cameraDirection = Vector3.Transform(cameraDirection, Matrix.CreateFromAxisAngle(cameraUp, (-MathHelper.PiOver4 / 150) * (Mouse.GetState().X - prevMouseState.X)));
             cameraDirection = Vector3.Transform(cameraDirection, Matrix.CreateFromAxisAngle(Vector3.Cross(cameraUp, cameraDirection), (MathHelper.PiOver4 / 100) * (Mouse.GetState().Y - prevMouseState.Y)));
             //cameraUp = Vector3.Transform(cameraUp, Matrix.CreateFromAxisAngle(Vector3.Cross(cameraUp, cameraDirection), (MathHelper.PiOver4 / 100) * (Mouse.GetState().Y - prevMouseState.Y)));
+                       
+            if (key.IsKeyDown(Keys.Space))
+                IsJump = true;
 
+            if(IsJump)
+            {
+                Jump();
+            }
+            else
+            {
+                Vector3 fixY = cameraPosition;
+                fixY.Y = 8;
+                cameraPosition = fixY;
+            }
+            
             // Reset prevMouseState
             prevMouseState = Mouse.GetState();
 
@@ -87,6 +102,27 @@ namespace Cube
         private void CreateLookAt()
         {
             view = Matrix.CreateLookAt(cameraPosition, cameraPosition + cameraDirection, cameraUp);
+        }
+
+        public void Jump()
+        {
+            if (cameraPosition.Y < JUMP_SIZE && !HighJump)
+                cameraPosition.Y += 0.5f;
+
+            if (cameraPosition.Y >= JUMP_SIZE)
+            {
+                HighJump = true;
+            }
+
+            if (HighJump)
+            {
+                cameraPosition.Y -= 0.3f;
+                if (cameraPosition.Y < INITIAL_Y_POSITION)
+                {
+                    IsJump = false;
+                    HighJump = false;
+                }
+            }
         }
 
     }

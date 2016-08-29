@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 using System.Collections.Generic;
 
 namespace Cube
@@ -13,6 +14,8 @@ namespace Cube
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         SpriteFont spriteFont;
+        int seed;
+        public bool isCollide { get; set; }
 
         //camera
         Camera camera;
@@ -34,27 +37,29 @@ namespace Cube
         public Game1()
         {
             graphics = new GraphicsDeviceManager(this);
-            graphics.PreferredBackBufferWidth = 800;
-            graphics.PreferredBackBufferHeight = 600;
-            graphics.IsFullScreen = true;
+            graphics.PreferredBackBufferWidth = 1024;
+            graphics.PreferredBackBufferHeight = 768;
+            //graphics.IsFullScreen = true;
             Content.RootDirectory = "Content";
         }
 
         protected override void Initialize()
         {
             //camera init
-            camera = new Camera(this, new Vector3(250, 8, 10), Vector3.Zero, new Vector3(0,1,0));
+            camera = new Camera(this, new Vector3(8, 8, 4), Vector3.Zero, new Vector3(0,1,0));
             Components.Add(camera);
             cubes = new List<Cube>();
+            Random rand = new Random();
+            seed = rand.Next(0, 5);
 
-            PerlinNoise noise = new PerlinNoise(46544);
+            PerlinNoise noise = new PerlinNoise(4);
             noise.Octaves = 4;
 
-            for (int x = 0; x < 2; x++)
+            for (int x = 0; x < 25; x++)
             {
-                for (int y = 0; y < 2; y++)
+                for (int y = 0; y < 5; y++)
                 {
-                    for (int z = 0; z < 2; z++)
+                    for (int z = 0; z < 25; z++)
                     {
                         if (y == 0)
                         {
@@ -81,9 +86,9 @@ namespace Cube
             spriteBatch = new SpriteBatch(GraphicsDevice);
             spriteFont = Content.Load<SpriteFont>("font");
 
-            var terra = Content.Load<Texture2D>("paiva");
-            var gramaLado = Content.Load<Texture2D>("paiva");
-            var gramaTop = Content.Load<Texture2D>("paiva");
+            var terra = Content.Load<Texture2D>("terra");
+            var gramaLado = Content.Load<Texture2D>("grama");
+            var gramaTop = Content.Load<Texture2D>("gramaTop");
 
             tex[0] = gramaLado;
             tex[1] = gramaLado;
@@ -108,27 +113,16 @@ namespace Cube
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            Window.Title = $"X {camera.cameraPosition.X} Y {camera.cameraPosition.Y} Z {camera.cameraPosition.Z}";
+            foreach (var cube in cubes)
+            {
+                if (cube.position == camera.cameraPosition)
+                    isCollide = true;
+                else                
+                    isCollide = false;                
+            }
 
-            KeyboardState ks = Keyboard.GetState();
-            if (ks.IsKeyDown(Keys.Left))
-            {
-                //worldTranslation *= Matrix.CreateTranslation(-.03f, 0, 0);
-            }
-            if (ks.IsKeyDown(Keys.Right))
-            {
-                //worldTranslation *= Matrix.CreateTranslation(.03f, 0, 0);
-            }
-            if (ks.IsKeyDown(Keys.Up))
-            {
-                //angle += .01f;
-            }
-            if (ks.IsKeyDown(Keys.Down))
-            {
-                //angle -= .01f;
-            }
             //angles the cube for auto spin
-            worldRotation *= Matrix.CreateFromYawPitchRoll(MathHelper.PiOver4 / 60, 0, 0);
+            //worldRotation *= Matrix.CreateFromYawPitchRoll(MathHelper.PiOver4 / 60, 0, 0);
 
             base.Update(gameTime);
         }
@@ -136,6 +130,7 @@ namespace Cube
         protected override void Draw(GameTime gameTime)
         {
             GraphicsDevice.Clear(Color.CornflowerBlue);
+            GraphicsDevice.DepthStencilState = DepthStencilState.Default;
 
             effect = new BasicEffect(GraphicsDevice);
             effect.World = worldRotation * worldTranslation;
@@ -191,23 +186,19 @@ namespace Cube
                     effect.TextureEnabled = true;
                     pass.Apply();
                     GraphicsDevice.DrawUserPrimitives<VertexPositionNormalTexture>(PrimitiveType.TriangleList, cube.bbot, 0, 2);
-                }
+                }                
             }
 
-            //var deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            spriteBatch.Begin();
 
-            //_frameCounter.Update(deltaTime);
+            spriteBatch.DrawString(spriteFont, $"Seed: {seed} Jump: {camera.IsJump} IsCollide:{isCollide}", new Vector2(1, 1), Color.Black);
+            spriteBatch.DrawString(spriteFont, $"Camera:{camera.cameraPosition}", new Vector2(10, 20), Color.Black);
+            spriteBatch.DrawString(spriteFont, $"View:{camera.view}", new Vector2(15, 1), Color.Black);
 
-            //var fps = string.Format("FPS: {0}", _frameCounter.AverageFramesPerSecond);
-
-            //spriteBatch.Begin();
-
-            //spriteBatch.DrawString(spriteFont, fps, new Vector2(1, 1), Color.Black);       
-
-            //spriteBatch.End();
-
+            spriteBatch.End();
 
             base.Draw(gameTime);
         }
+
     }
 }

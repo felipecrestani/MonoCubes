@@ -45,11 +45,11 @@ namespace Cube
             cubes = new List<Cube>();
 
             //cube init
-            for (int x = 0; x < 10; x++)
+            for (int x = 0; x < 25; x++)
             {
-                for (int z = 0; z < 10; z++)
+                for (int z = 0; z < 25; z++)
                 {
-                    for (int y = 0; y < 10; y++)
+                    for (int y = 0; y < 5; y++)
                     {
                         Cube cube = new Cube(new Vector3(2, 2, 2), new Vector3(x*6, y*6, z*6));
                         cube.buildCube();
