@@ -28,6 +28,9 @@ namespace Cube
         List<Cube> cubes;
         BasicEffect effect;
 
+        List<BoundingSphere> listBoundingSpheres;
+        BoundingSphere cameraBounding;
+
         //cube texture array
         Texture2D[] tex = new Texture2D[6];
 
@@ -48,7 +51,9 @@ namespace Cube
             //camera init
             camera = new Camera(this, new Vector3(8, 8, 4), Vector3.Zero, new Vector3(0,1,0));
             Components.Add(camera);
+
             cubes = new List<Cube>();
+            listBoundingSpheres = new List<BoundingSphere>();
             Random rand = new Random();
             seed = rand.Next(0, 5);
 
@@ -66,12 +71,17 @@ namespace Cube
                             Cube cube = new Cube(new Vector3(2, 2, 2), new Vector3(x * 4, y * 4, z * 4));
                             cube.buildCube();
                             cubes.Add(cube);
+
+                            BoundingSphere sphere = new BoundingSphere(cube.position, 1);
+                            listBoundingSpheres.Add(sphere);
                         }
                         else if (noise.Compute(x, y, z) > 0)
                         {
                             Cube cube = new Cube(new Vector3(2, 2, 2), new Vector3(x * 4, y * 4, z * 4));
                             cube.buildCube();
                             cubes.Add(cube);
+                            BoundingSphere sphere = new BoundingSphere(cube.position, 1);
+                            listBoundingSpheres.Add(sphere);
                         }
                     }
                 }
@@ -113,12 +123,19 @@ namespace Cube
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
                 this.Exit();
 
-            foreach (var cube in cubes)
+            cameraBounding = new BoundingSphere(camera.cameraPosition, 3);
+
+            foreach (var cube in listBoundingSpheres)
             {
-                if (cube.position == camera.cameraPosition)
+                if (cameraBounding.Intersects(cube))
+                {
                     isCollide = true;
-                else                
-                    isCollide = false;                
+                    break;
+                }
+                else
+                {
+                    isCollide = false;
+                }
             }
 
             //angles the cube for auto spin
@@ -129,7 +146,12 @@ namespace Cube
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
+            if(isCollide)
+                GraphicsDevice.Clear(Color.Red);
+            else
+                GraphicsDevice.Clear(Color.CornflowerBlue);
+
+
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
 
             effect = new BasicEffect(GraphicsDevice);
@@ -192,8 +214,9 @@ namespace Cube
             spriteBatch.Begin();
 
             spriteBatch.DrawString(spriteFont, $"Seed: {seed} Jump: {camera.IsJump} IsCollide:{isCollide}", new Vector2(1, 1), Color.Black);
-            spriteBatch.DrawString(spriteFont, $"Camera:{camera.cameraPosition}", new Vector2(10, 20), Color.Black);
-            spriteBatch.DrawString(spriteFont, $"View:{camera.view}", new Vector2(15, 1), Color.Black);
+            spriteBatch.DrawString(spriteFont, $"IsCollide:{isCollide}", new Vector2(1, 20), Color.Black);
+            spriteBatch.DrawString(spriteFont, $"Camera:{camera.cameraPosition}", new Vector2(1, 40), Color.Black);
+            //spriteBatch.DrawString(spriteFont, $"View:{camera.view}", new Vector2(15, 1), Color.Black);
 
             spriteBatch.End();
 
