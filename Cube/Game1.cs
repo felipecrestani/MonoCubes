@@ -49,7 +49,7 @@ namespace Cube
         protected override void Initialize()
         {
             //camera init
-            camera = new Camera(this, new Vector3(8, 8, 4), Vector3.Zero, new Vector3(0,1,0));
+            camera = new Camera(this, new Vector3(8, 8, 16), Vector3.Zero, new Vector3(0,1,0));
             Components.Add(camera);
 
             cubes = new List<Cube>();
@@ -87,6 +87,8 @@ namespace Cube
                 }
             }
 
+            camera.cubes = listBoundingSpheres;
+
             base.Initialize();
         }
 
@@ -121,22 +123,7 @@ namespace Cube
         {
             // Allows the game to exit
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed)
-                this.Exit();
-
-            cameraBounding = new BoundingSphere(camera.cameraPosition, 3);
-
-            foreach (var cube in listBoundingSpheres)
-            {
-                if (cameraBounding.Intersects(cube))
-                {
-                    isCollide = true;
-                    break;
-                }
-                else
-                {
-                    isCollide = false;
-                }
-            }
+                this.Exit();            
 
             //angles the cube for auto spin
             //worldRotation *= Matrix.CreateFromYawPitchRoll(MathHelper.PiOver4 / 60, 0, 0);
@@ -146,11 +133,7 @@ namespace Cube
 
         protected override void Draw(GameTime gameTime)
         {
-            if(isCollide)
-                GraphicsDevice.Clear(Color.Red);
-            else
-                GraphicsDevice.Clear(Color.CornflowerBlue);
-
+            GraphicsDevice.Clear(Color.CornflowerBlue);
 
             GraphicsDevice.DepthStencilState = DepthStencilState.Default;
 

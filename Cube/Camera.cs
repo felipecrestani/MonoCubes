@@ -1,5 +1,6 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Input;
+using System.Collections.Generic;
 
 namespace Cube
 {
@@ -15,6 +16,9 @@ namespace Cube
         public Vector3 cameraPosition;
         Vector3 cameraDirection;
         Vector3 cameraUp;
+        Vector3 oldCameraPosition;
+
+        public List<BoundingSphere> cubes { get; set; }
 
         //defines speed of camera movement
         float speed = 0.5f;
@@ -22,7 +26,7 @@ namespace Cube
         MouseState prevMouseState;
 
         //Jump
-        const int INITIAL_Y_POSITION = 8;
+        const int GROUND_POSITION = 8;
         const int JUMP_SIZE = 18;
         public bool IsJump { get; set; }
         bool HighJump { get; set; }
@@ -64,19 +68,35 @@ namespace Cube
         {
             var key = Keyboard.GetState();
 
+
             // Move forward and backward
             if (key.IsKeyDown(Keys.Up) || key.IsKeyDown(Keys.W)) cameraPosition += cameraDirection * speed;
             if (key.IsKeyDown(Keys.Down) || key.IsKeyDown(Keys.S)) cameraPosition -= cameraDirection * speed;
-
             if (key.IsKeyDown(Keys.Left) || key.IsKeyDown(Keys.A)) cameraPosition += Vector3.Cross(cameraUp, cameraDirection) * speed;
-            if (key.IsKeyDown(Keys.Right) || key.IsKeyDown(Keys.D)) cameraPosition -= Vector3.Cross(cameraUp, cameraDirection) * speed;
-            
+            if (key.IsKeyDown(Keys.Right) || key.IsKeyDown(Keys.D)) cameraPosition -= Vector3.Cross(cameraUp, cameraDirection) * speed;            
 
             // Rotation in the world
             cameraDirection = Vector3.Transform(cameraDirection, Matrix.CreateFromAxisAngle(cameraUp, (-MathHelper.PiOver4 / 150) * (Mouse.GetState().X - prevMouseState.X)));
             cameraDirection = Vector3.Transform(cameraDirection, Matrix.CreateFromAxisAngle(Vector3.Cross(cameraUp, cameraDirection), (MathHelper.PiOver4 / 100) * (Mouse.GetState().Y - prevMouseState.Y)));
-            //cameraUp = Vector3.Transform(cameraUp, Matrix.CreateFromAxisAngle(Vector3.Cross(cameraUp, cameraDirection), (MathHelper.PiOver4 / 100) * (Mouse.GetState().Y - prevMouseState.Y)));
-                       
+
+            BoundingSphere cameraBounding = new BoundingSphere(cameraPosition,3.2f);
+
+            foreach (var cube in cubes)
+            {
+                if (cameraBounding.Intersects(cube))
+                {
+                    isCollide = true;
+                    break;
+                }
+                else
+                {
+                    isCollide = false;
+                }
+            }
+
+            if (!isCollide)
+                oldCameraPosition = cameraPosition;
+
             if (key.IsKeyDown(Keys.Space))
                 IsJump = true;
 
@@ -87,12 +107,28 @@ namespace Cube
             else
             {
                 Vector3 fixY = cameraPosition;
-                fixY.Y = 8;
+                fixY.Y = GROUND_POSITION;
                 cameraPosition = fixY;
             }
             
             // Reset prevMouseState
             prevMouseState = Mouse.GetState();
+
+            //Camera Move Limit
+            if (cameraPosition.X > 100)
+                cameraPosition.X = 100;
+
+            if (cameraPosition.X < 0)
+                cameraPosition.X = 0;
+
+            if (cameraPosition.Z > 100)
+                cameraPosition.Z = 100;
+
+            if (cameraPosition.Z < 0)
+                cameraPosition.Z = 0;
+
+            if (isCollide)
+                cameraPosition = oldCameraPosition;
 
             CreateLookAt();
 
@@ -117,7 +153,7 @@ namespace Cube
             if (HighJump)
             {
                 cameraPosition.Y -= 0.3f;
-                if (cameraPosition.Y < INITIAL_Y_POSITION)
+                if (cameraPosition.Y < GROUND_POSITION)
                 {
                     IsJump = false;
                     HighJump = false;
